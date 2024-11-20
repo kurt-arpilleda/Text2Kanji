@@ -158,7 +158,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @Composable
 fun MainApp(conversations: List<Pair<String, List<Pair<String, Long>>>>) {
     val navController = rememberNavController()

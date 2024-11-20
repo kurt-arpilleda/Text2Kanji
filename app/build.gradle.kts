@@ -83,7 +83,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     // Duplicate entries removed for clarity
-    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation ("androidx.activity:activity-compose:1.9.3")
     implementation ("com.google.accompanist:accompanist-pager:0.28.0") // Use the latest version
     implementation ("androidx.activity:activity-ktx:1.9.2")
     implementation ("androidx.compose.foundation:foundation:1.7.4")
@@ -91,7 +91,6 @@ dependencies {
     implementation ("io.coil-kt:coil-compose:2.3.0")
     implementation ("androidx.media3:media3-exoplayer:1.4.1") // Latest stable version
     implementation ("androidx.media3:media3-ui:1.4.1")
-    implementation ("com.arthenica:ffmpeg-kit-full:4.5.LTS")
     implementation ("com.google.android.exoplayer:exoplayer:2.19.1")
     implementation ("com.google.android.material:material:1.9.0")
     implementation ("androidx.compose.ui:ui:1.3.0")
