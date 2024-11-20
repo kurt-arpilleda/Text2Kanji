@@ -70,7 +70,6 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
     implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.sqlite:sqlite:2.4.0")
     implementation("io.coil-kt:coil-compose:2.0.0")
     implementation(libs.androidx.espresso.core)
 
@@ -97,11 +96,6 @@ dependencies {
     implementation ("com.google.android.material:material:1.9.0")
     implementation ("androidx.compose.ui:ui:1.3.0")
     implementation ("androidx.compose.material3:material3:1.3.0")
-    implementation ("com.google.accompanist:accompanist-swiperefresh:0.36.0")
-    implementation ("com.squareup.okhttp3:okhttp:4.10.0")
-    implementation ("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation ("com.squareup.okhttp3:logging-interceptor:4.10.0")
     implementation ("io.coil-kt:coil-compose:2.3.0")
     implementation ("androidx.work:work-runtime-ktx:2.9.1")
     implementation ("androidx.lifecycle:lifecycle-service:2.8.6")
@@ -110,7 +104,6 @@ dependencies {
     implementation ("com.google.accompanist:accompanist-permissions:0.32.0")
     implementation ("androidx.navigation:navigation-compose:2.5.3")
     implementation ("com.google.code.gson:gson:2.10.1")
-    implementation ("com.squareup.okhttp3:okhttp:4.10.0")
     implementation ("com.google.mlkit:translate:17.0.3")
     implementation ("com.google.mlkit:language-id:17.0.6")
 }
