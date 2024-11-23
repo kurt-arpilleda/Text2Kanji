@@ -51,6 +51,7 @@ import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.TranslateLanguage
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 
 class MainActivity : ComponentActivity() {
 
@@ -200,60 +201,90 @@ fun ConversationListScreen(
             )
         }
     ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
-            items(conversations.size) { index ->
-                val conversation = conversations[index]
-                val lastMessage = conversation.second.firstOrNull()
-                val timestamp = lastMessage?.second?.let { formatTimestamp(it) }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp)
-                        .clickable { onConversationSelected(conversation) },
-                    verticalAlignment = Alignment.CenterVertically
+        // If conversations list is empty, show the image and text
+        if (conversations.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    // Profile Image
+                    // Image - Replace with your actual drawable resource
                     Image(
-                        painter = painterResource(id = R.drawable.profile_placeholder), // Replace with actual image resource
-                        contentDescription = "Profile Image",
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surface),
-                        contentScale = ContentScale.Crop
+                        painter = painterResource(id = R.drawable.questionman), // Replace with actual image resource
+                        contentDescription = "No SMS Available",
+                        modifier = Modifier.size(160.dp)
                     )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        // Phone number
-                        Text(
-                            text = conversation.first,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        // Last message preview
-                        Text(
-                            text = lastMessage?.first ?: "",
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    // Timestamp on the right side
-                    if (timestamp != null) {
-                        Text(
-                            text = timestamp,
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    // Text below the image
+                    Text(
+                        text = "No SMS Available",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                        textAlign = TextAlign.Center
+                    )
                 }
-                Divider()
+            }
+        } else {
+            // If conversations are not empty, show the list as usual
+            LazyColumn(modifier = Modifier.padding(padding)) {
+                items(conversations.size) { index ->
+                    val conversation = conversations[index]
+                    val lastMessage = conversation.second.firstOrNull()
+                    val timestamp = lastMessage?.second?.let { formatTimestamp(it) }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp)
+                            .clickable { onConversationSelected(conversation) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Profile Image
+                        Image(
+                            painter = painterResource(id = R.drawable.profile_placeholder), // Replace with actual image resource
+                            contentDescription = "Profile Image",
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surface),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            // Phone number
+                            Text(
+                                text = conversation.first,
+                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            // Last message preview
+                            Text(
+                                text = lastMessage?.first ?: "",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        // Timestamp on the right side
+                        if (timestamp != null) {
+                            Text(
+                                text = timestamp,
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Divider()
+                }
             }
         }
     }
