@@ -1,10 +1,14 @@
 package com.example.text2kanji
 
 import android.Manifest
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Telephony
+import android.telephony.SmsMessage
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
@@ -56,6 +60,7 @@ import androidx.compose.ui.text.style.TextAlign
 class MainActivity : ComponentActivity() {
 
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<Array<String>>
+    private lateinit var smsReceiver: SmsReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,7 +75,6 @@ class MainActivity : ComponentActivity() {
             if (readSmsGranted && receiveSmsGranted) {
                 loadContent()
             } else {
-                // Handle permission denial appropriately
                 showPermissionDeniedMessage()
             }
         }
@@ -108,6 +112,19 @@ class MainActivity : ComponentActivity() {
                         conversations = loadSmsConversations()
                         isLoading = false
                     }
+                }
+
+                // Listen for new SMS via BroadcastReceiver
+                if (!::smsReceiver.isInitialized) {
+                    smsReceiver = SmsReceiver { newMessage ->
+                        // Handle new SMS received
+                        lifecycleScope.launch {
+                            conversations = loadSmsConversations() // Reload the list of SMS in a coroutine
+                        }
+                    }
+                    // Use Intent.ACTION_RECEIVE to receive SMS
+                    val filter = IntentFilter("android.provider.Telephony.SMS_RECEIVED")
+                    registerReceiver(smsReceiver, filter)
                 }
 
                 // Show loading indicator in the app UI
@@ -154,6 +171,29 @@ class MainActivity : ComponentActivity() {
         setContent {
             Text2KanjiTheme {
                 Text(text = "Permission to read and receive SMS is required to continue.")
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Unregister the SMS receiver when the activity is destroyed
+        if (::smsReceiver.isInitialized) {
+            unregisterReceiver(smsReceiver)
+        }
+    }
+}
+
+// SmsReceiver class that listens for new SMS
+class SmsReceiver(val onSmsReceived: (String) -> Unit) : BroadcastReceiver() {
+    override fun onReceive(context: Context?, intent: Intent?) {
+        val pdus = intent?.extras?.get("pdus") as? Array<*>
+        pdus?.forEach { pdu ->
+            val smsMessage = SmsMessage.createFromPdu(pdu as ByteArray)
+            val sender = smsMessage.originatingAddress
+            sender?.let {
+                // Handle the incoming message
+                onSmsReceived(it)
             }
         }
     }
