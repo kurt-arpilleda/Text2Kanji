@@ -13,8 +13,6 @@ import androidx.core.content.FileProvider
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -24,29 +22,20 @@ import java.net.URL
 
 class AppUpdateService(private val context: Context) {
 
-    private val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl("http://14.1.67.29/")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-
-    private val service: ApiService = retrofit.create(ApiService::class.java)
+    private val service: ApiService = RetrofitClient.instance
 
     fun checkForAppUpdate() {
-        // Check current version code
         val currentVersionCode = getCurrentAppVersionCode()
 
-        // Fetch update information
         service.getAppUpdateDetails().enqueue(object : Callback<AppUpdateResponse> {
             override fun onResponse(call: Call<AppUpdateResponse>, response: Response<AppUpdateResponse>) {
                 if (response.isSuccessful) {
                     val appUpdateResponse = response.body()
 
-                    // Check if there is a new version
-                    if (appUpdateResponse != null && appUpdateResponse.elements.isNotEmpty()) {
+                    if (appUpdateResponse?.elements?.isNotEmpty() == true) {
                         val newVersionCode = appUpdateResponse.elements[0].versionCode
 
                         if (newVersionCode > currentVersionCode) {
-                            // New version available, prompt user with a dialog
                             showUpdateDialog(appUpdateResponse.elements[0].outputFile)
                         }
                     }
@@ -54,7 +43,7 @@ class AppUpdateService(private val context: Context) {
             }
 
             override fun onFailure(call: Call<AppUpdateResponse>, t: Throwable) {
-                // Handle network errors or other failures
+                // Handle network failures here
             }
         })
     }
@@ -70,33 +59,34 @@ class AppUpdateService(private val context: Context) {
     }
 
     private fun showUpdateDialog(fileName: String) {
-        val dialogBuilder = AlertDialog.Builder(context)
+        AlertDialog.Builder(context)
             .setTitle("New Version Available")
             .setMessage("A new version of the app is available. Please update now.")
             .setPositiveButton("Update") { _, _ ->
-                // If "Update" is clicked, download and install the APK
                 showDownloadProgressDialog(fileName)
             }
-
-        val dialog = dialogBuilder.create()
-        dialog.setCancelable(false) // Make the dialog non-cancelable
-        dialog.show()
+            .setCancelable(false)
+            .show()
     }
 
     private fun showDownloadProgressDialog(fileName: String) {
-        val progressDialog = ProgressDialog(context)
-        progressDialog.setTitle("Downloading Update")
+        val progressDialog = ProgressDialog(context).apply {
+            setTitle("Downloading Update")
+            setMessage("Downloading $fileName...")
+            setCancelable(false)
+            setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
+            setIndeterminate(false)
+        }
 
-        progressDialog.setMessage("Downloading $fileName...") // Display filename
-        progressDialog.setCancelable(false)
-        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL); // Important for percentage
-        progressDialog.setIndeterminate(false);
         progressDialog.show()
 
-        val url = "http://14.1.67.29/V4/Others/Kurt/LatestVersionAPK/Text2Kanji/$fileName"
         val destinationFile = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
+        downloadFile(fileName, RetrofitClient.PRIMARY_URL, progressDialog, destinationFile) // Start download from primary URL
+    }
 
+    private fun downloadFile(fileName: String, baseUrl: String, progressDialog: ProgressDialog, destinationFile: File) {
         Thread {
+            var url = "$baseUrl/V4/Others/Kurt/LatestVersionAPK/Text2Kanji/$fileName"
             var downloadedBytes: Long = 0
             var totalBytes: Long = 0
 
@@ -106,11 +96,10 @@ class AppUpdateService(private val context: Context) {
                 connection.connect()
 
                 totalBytes = connection.contentLength.toLong()
-                progressDialog.setMax(totalBytes.toInt()); // Set max value for progress bar
+                progressDialog.max = totalBytes.toInt()
 
                 val inputStream: InputStream = BufferedInputStream(connection.inputStream)
                 val outputStream = FileOutputStream(destinationFile)
-
                 val buffer = ByteArray(8192)
                 var count: Int
                 while (inputStream.read(buffer).also { count = it } != -1) {
@@ -119,9 +108,8 @@ class AppUpdateService(private val context: Context) {
 
                     // Update progress on the main thread
                     Handler(context.mainLooper).post {
-                        val progress = (downloadedBytes * 100) / totalBytes
-                        progressDialog.setMessage("$fileName... $progress%") // Keep filename
-                        progressDialog.setProgress(downloadedBytes.toInt());
+                        progressDialog.progress = downloadedBytes.toInt()
+                        progressDialog.setMessage("$fileName... ${(downloadedBytes * 100) / totalBytes}%")
                     }
                 }
 
@@ -136,11 +124,8 @@ class AppUpdateService(private val context: Context) {
                 }
 
             } catch (e: Exception) {
-                Handler(context.mainLooper).post {
-                    progressDialog.dismiss()
-                    Toast.makeText(context, "Error downloading APK", Toast.LENGTH_SHORT).show()
-                }
-                e.printStackTrace()
+                // Attempt to download from the fallback URL
+                downloadFile(fileName, RetrofitClient.FALLBACK_URL, progressDialog, destinationFile)
             }
         }.start()
     }
@@ -148,10 +133,11 @@ class AppUpdateService(private val context: Context) {
     private fun installAPK(file: File) {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 
-        val intent = Intent(Intent.ACTION_VIEW)
-        intent.setDataAndType(uri, "application/vnd.android.package-archive")
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
 
         context.startActivity(intent)
     }
