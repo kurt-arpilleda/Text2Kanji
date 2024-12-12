@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
 import android.os.Bundle
 import android.provider.Telephony
 import android.telephony.SmsMessage
@@ -56,14 +57,26 @@ import com.google.mlkit.nl.translate.TranslateLanguage
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import kotlinx.coroutines.CoroutineScope
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<Array<String>>
     private lateinit var smsReceiver: SmsReceiver
+    private lateinit var appUpdateService: AppUpdateService
+    private lateinit var connectivityReceiver: NetworkUtils.ConnectivityReceiver // Correct type
+    private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        appUpdateService = AppUpdateService(this)
+        checkForUpdates()
+        connectivityReceiver = NetworkUtils.ConnectivityReceiver { // Initialize with lambda
+            checkForUpdates()
+        }
+        val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+        registerReceiver(connectivityReceiver, filter)
 
         // Register for permission results
         requestPermissionLauncher = registerForActivityResult(
@@ -180,6 +193,15 @@ class MainActivity : ComponentActivity() {
         // Unregister the SMS receiver when the activity is destroyed
         if (::smsReceiver.isInitialized) {
             unregisterReceiver(smsReceiver)
+        }
+        unregisterReceiver(connectivityReceiver)
+    }
+
+    private fun checkForUpdates() {
+        coroutineScope.launch {
+            if (NetworkUtils.isNetworkAvailable(this@MainActivity)) { // Use the utility function
+                appUpdateService.checkForAppUpdate()
+            }
         }
     }
 }
