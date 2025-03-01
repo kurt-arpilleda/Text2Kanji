@@ -55,8 +55,13 @@ import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.TranslateLanguage
 import android.widget.Toast
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineScope
 
 class MainActivity : ComponentActivity() {
@@ -71,7 +76,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         appUpdateService = AppUpdateService(this)
-        checkForUpdates()
         connectivityReceiver = NetworkUtils.ConnectivityReceiver { // Initialize with lambda
             checkForUpdates()
         }
@@ -230,7 +234,8 @@ fun MainApp(conversations: List<Pair<String, List<Pair<String, Long>>>>) {
                 conversations = conversations,
                 onConversationSelected = { conversation ->
                     navController.navigate("messageList/${conversation.first}")
-                }
+                },
+                onVersionClick = { navController.navigate("versionScreen") } // Add this
             )
         }
         composable("messageList/{address}") { backStackEntry ->
@@ -242,6 +247,9 @@ fun MainApp(conversations: List<Pair<String, List<Pair<String, Long>>>>) {
                 phoneNumber = address // Pass the phone number to the screen
             )
         }
+        composable("versionScreen") {
+            VersionScreen(navController)
+        }
     }
 }
 
@@ -249,16 +257,36 @@ fun MainApp(conversations: List<Pair<String, List<Pair<String, Long>>>>) {
 @Composable
 fun ConversationListScreen(
     conversations: List<Pair<String, List<Pair<String, Long>>>>,
-    onConversationSelected: (Pair<String, List<Pair<String, Long>>>) -> Unit
+    onConversationSelected: (Pair<String, List<Pair<String, Long>>>) -> Unit,
+    onVersionClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+    val versionName = packageInfo.versionName
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Messages",
-                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp) // Adjust the font size here
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Messages",
+                            style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp)) // Add some space between texts
+                        Text(
+                            text = "v$versionName",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Normal,
+                                textDecoration = TextDecoration.Underline
+                            ),
+                            modifier = Modifier.clickable {
+                                onVersionClick()
+                            }
+                        )
+                    }
                 }
             )
         }
@@ -351,7 +379,93 @@ fun ConversationListScreen(
         }
     }
 }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun VersionScreen(navController: NavController) {
+    var selectedLanguage by remember { mutableStateOf("en") } // Default to English
+    val context = LocalContext.current
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+    // Load the correct version history based on selected language
+    val versionHistory = if (selectedLanguage == "en") {
+        context.resources.getStringArray(R.array.version_history_en)
+    } else {
+        context.resources.getStringArray(R.array.version_history_jp)
+    }
 
+    val appIcon = painterResource(id = R.drawable.texttokanjiicon)
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Version History", fontSize = 20.sp, fontWeight = FontWeight.Bold) },
+
+                navigationIcon = {
+                    IconButton(onClick = { backDispatcher?.onBackPressed() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                }
+                ,
+                actions = {
+                    // USA Flag Button
+                    IconButton(onClick = { selectedLanguage = "en" }) {
+                        Image(
+                            painter = painterResource(id = R.drawable.usaflag),
+                            contentDescription = "English",
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    // Japan Flag Button
+                    IconButton(onClick = { selectedLanguage = "jp" }) {
+                        Image(
+                            painter = painterResource(id = R.drawable.japanflag),
+                            contentDescription = "Japanese",
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Background Image with low opacity
+            Image(
+                painter = appIcon,
+                contentDescription = "App Icon Background",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .align(Alignment.Center),
+                contentScale = ContentScale.Fit,
+                alpha = 0.7f
+            )
+
+            // Foreground content
+            LazyColumn(
+                contentPadding = padding,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                items(versionHistory) { version ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = version,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 fun formatTimestamp(timestamp: Long): String {
     val currentTime = Calendar.getInstance()
     val messageTime = Calendar.getInstance()
@@ -656,7 +770,8 @@ fun PreviewConversationListScreen() {
                 "1234567890" to listOf("Hi" to 1690185600000L, "Hello" to 1690272000000L),
                 "9876543210" to listOf("How are you?" to 1690275600000L)
             ),
-            onConversationSelected = {}
+            onConversationSelected = {},
+            onVersionClick = {}
         )
     }
 }

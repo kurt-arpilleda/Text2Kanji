@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">Text2Kanji</string>
+
+    <string-array name="version_history_en">
+        <item>1.2 - Added a screen dashboard to display version history changes.</item>
+        <item>1.1 - Added a button with a function to translate messages into Japanese.</item>
+        <item>1.0 - Initial release with core features, including fetching all SMS messages. Each phone number message is clickable, leading to another screen that displays all messages from that number along with the dates they were received.</item>
+    </string-array>
+
+    <string-array name="version_history_jp">
+        <item>1.2 - バージョン履歴の変更を表示するためのダッシュボード画面を追加しました。</item>
+        <item>1.1 - メッセージを日本語に翻訳するボタンを追加しました。</item>
+        <item>1.0 - すべてのSMSメッセージを取得するコア機能を搭載した初期リリース。各電話番号のメッセージはクリック可能で、別の画面に移動し、その番号のすべてのメッセージと受信日時を表示できます。</item>
+    </string-array>
+
 </resources>
